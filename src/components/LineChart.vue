@@ -2,7 +2,19 @@
   <div class="lineChart">
     <h1>折線圖</h1>
     <div class="detail">Here is the chart.</div>
-    <svg class="svg" viewBox="0 0 590 630" preserveAspectRatio="xMidYMin slice" style="width: 100%; padding-bottom: 100%; height: 1px; overflow: visible">
+    <!-- 圖表 -->
+    <div class="chartContain">
+      <svg class="chart" :viewBox="viewBox" preserveAspectRatio="xMidYMin slice">
+        <!-- 左上角起始點 -->
+        <g class="chartWrap" :transform="startPoint">
+          <text class="axisYText" :x="axisYText[0]" :y="axisYText[1]" dy="1em" transform="rotate(-90)">件數</text>
+          <g class="line" v-for="(path, index) in line" :key="index">
+            <path fill="none" :stroke="path.color" :d="path.d"></path>
+          </g>
+        </g>
+      </svg>
+    </div>
+    <!-- <svg class="svg" viewBox="0 0 590 630" preserveAspectRatio="xMidYMin slice" style="width: 100%; padding-bottom: 100%; height: 1px; overflow: visible">
       <g transform="translate(60,30)">
         <g transform="translate(0, 500)" class="x axis" fill="none" font-size="10" font-family="sans-serif" text-anchor="middle">
           <path class="domain" stroke="#000" d="M0.5,6V0.5H500.5V6"></path>
@@ -122,14 +134,93 @@
           <text x="210" y="580">楠梓區</text>
         </g>
       </g>
-    </svg>
+    </svg> -->
   </div>
 </template>
 
 <script>
+import * as d3 from "d3";
+
 export default {
   data() {
     return {
+      data: [
+        {
+          name: "鼓山區",
+          value: [
+            {
+              month: "6月",
+              number: "233"
+            },
+            {
+              month: "7月",
+              number: "412"
+            },
+            {
+              month: "8月",
+              number: "533"
+            },
+            {
+              month: "9月",
+              number: "267"
+            },
+            {
+              month: "10月",
+              number: "321"
+            }
+          ]
+        },
+        {
+          name: "左營區",
+          value: [
+            {
+              month: "6月",
+              number: "432"
+            },
+            {
+              month: "7月",
+              number: "443"
+            },
+            {
+              month: "8月",
+              number: "334"
+            },
+            {
+              month: "9月",
+              number: "233"
+            },
+            {
+              month: "10月",
+              number: "114"
+            }
+          ]
+        },
+        {
+          name: "楠梓區",
+          value: [
+            {
+              month: "6月",
+              number: "222"
+            },
+            {
+              month: "7月",
+              number: "333"
+            },
+            {
+              month: "8月",
+              number: "441"
+            },
+            {
+              month: "9月",
+              number: "468"
+            },
+            {
+              month: "10月",
+              number: "378"
+            }
+          ]
+        }
+      ],
       chart: {
         width: 500,
         height: 500,
@@ -139,6 +230,115 @@ export default {
         paddingLeft: 60
       }
     };
+  },
+  computed: {
+    viewBox() {
+      let viewW =
+        this.chart.width + this.chart.paddingRight + this.chart.paddingLeft;
+      let viewH =
+        this.chart.height + this.chart.paddingTop + this.chart.paddingBottom;
+
+      return `0 0 ${viewW} ${viewH}`;
+    },
+    startPoint() {
+      return `translate(${this.chart.paddingLeft}, ${this.chart.paddingTop})`;
+    },
+    dataArray() {
+      let arrayset = [];
+
+      this.data.forEach(function(e, i) {
+        let array = []; // 資料轉成陣列給之後畫線用
+
+        e.value.forEach(function(ev) {
+          array.push(ev.number);
+        });
+        
+        arrayset.push(array);
+      });
+
+      return arrayset;
+    },
+    xAxis() {
+      return d3
+        .axisBottom(this.xScale)
+        .ticks(5)
+        .tickFormat((d, i) => {
+          return this.xLabel[i];
+        });
+    },
+    yAxis() {
+      return d3.axisLeft(this.yScale).tickSizeInner(-this.chart.height);
+    },
+    xScale() {
+      return d3
+        .scaleLinear()
+        .domain([0, this.data[0].value.length])
+        .range([0, this.chart.width]);
+    },
+    yScale() {
+      let Ymin = 0;
+      let Ymax;
+      let newArray = [];
+
+      this.data.forEach(function(e, i) {
+        e.value.forEach(function(ev) {
+          newArray.push(ev.number);
+        });
+      });
+      Ymax = d3.max(newArray);
+
+      return d3
+        .scaleLinear()
+        .domain([Ymin, Ymax])
+        .range([this.chart.height, 0]);
+    },
+    xLabel() {
+      let tickLabels = [""];
+      this.data[0].value.forEach(function(e) {
+        tickLabels.push(e.month);
+      });
+      return tickLabels;
+    },
+    axisYText() {
+      let x = 0 - this.chart.height / 2;
+      let y = 0 - this.chart.paddingLeft;
+      return [x, y];
+    },
+    line() {
+      let color = d3.scaleOrdinal(d3.schemeCategory10);
+      let line = d3
+        .line()
+        .x((d, i) => {
+          //利用尺度運算資料索引，傳回x的位置
+          return this.xScale(i + 1);
+        })
+        .y(d => {
+          //利用尺度運算資料的值，傳回y的位置
+          return this.yScale(d);
+        });
+      let pathArray = [];
+
+      this.dataArray.forEach(function(e, i) {
+        pathArray.push({d: line(e), color: color(i)});
+      });
+
+      return pathArray;
+    }
+  },
+  mounted() {
+    // 插入X軸座標
+    d3
+      .select(".chart .chartWrap")
+      .insert("g")
+      .attr("transform", `translate(0, ${this.chart.height})`)
+      .attr("class", "axis axisX")
+      .call(this.xAxis);
+    // 插入Y軸座標
+    d3
+      .select(".chart .chartWrap")
+      .insert("g")
+      .attr("class", "axis axisY")
+      .call(this.yAxis);
   }
 };
 </script>
@@ -147,6 +347,34 @@ export default {
 .lineChart {
   .detail {
     color: red;
+  }
+  .chartContain {
+    max-width: 600px;
+    margin: 0 auto;
+    .chart {
+      width: 100%;
+      padding-bottom: 100%;
+      height: 1px;
+      overflow: visible;
+      .chartWrap {
+        .axis.axisY {
+          .tick {
+            line {
+              stroke: #efefef;
+              transform: translateX(1px);
+            }
+            &:nth-child(2) {
+              line {
+                stroke: black;
+              }
+            }
+          }
+        }
+        .axisYText {
+          text-anchor: middle;
+        }
+      }
+    }
   }
 }
 </style>
