@@ -1,19 +1,43 @@
 <template>
   <div class="lineChart">
     <h1>折線圖</h1>
-    <div class="detail">Here is the chart.</div>
+    <div class="detail">高雄市不動產買賣統計(104年6-10月)</div>
     <!-- 圖表 -->
     <div class="chartContain">
       <svg class="chart" :viewBox="viewBox" preserveAspectRatio="xMidYMin slice">
         <!-- 左上角起始點 -->
         <g class="chartWrap" :transform="startPoint">
-          <text class="axisYText" :x="axisYText[0]" :y="axisYText[1]" dy="1em" transform="rotate(-90)">件數</text>
-          <g class="line" v-for="(path, index) in line" :key="index">
+          <!-- X軸座標 -->
+          <g :transform="`translate(0, ${chart.height})`" class="axis axisX" fill="none" font-size="10" font-family="sans-serif" text-anchor="middle">
+          </g>
+          <!-- Y軸座標 -->
+          <g class="axis axisY" fill="none" font-size="10" font-family="sans-serif" text-anchor="end">
+          </g>
+          <!-- Y軸標籤 -->
+          <text class="axisYText" :x="axisYText[0]" :y="axisYText[1]" dy="1em" transform="rotate(-90)" text-anchor="middle">件數</text>
+          <!-- 折線 -->
+          <g class="line" v-for="(path, key) in line" :key="key">
             <path fill="none" :stroke="path.color" :d="path.d"></path>
+          </g>
+          <!-- 點 -->
+          <g class="dot" v-for="(group, key) in dot" :key="key">
+            <template v-for="(c, k) in group.circle">
+              <circle :key="k" :cx="c.cx" :cy="c.cy" r="5" :fill="group.color" stroke="white" v-on:mouseover="showTooltip(key, k, $event)" v-on:mouseout="hiddenTooltip"></circle>
+            </template>
+          </g>
+          <!-- 標籤 -->
+          <g class="label" v-for="(la, key) in label" :key="key">
+            <circle :cx="la.cx" :cy="la.cy" r="5" :fill="la.color"></circle>
+            <text :x="la.x" :y="la.y">{{ la.name }}</text>
           </g>
         </g>
       </svg>
+      <div :class="{ tooltip: true, hidden: hideTooltip}">
+        <div class="name">左營區 / 10月</div>
+        <div class="value">214 件</div>
+      </div>
     </div>
+    <button @click="randomData">隨機資料</button>
     <!-- <svg class="svg" viewBox="0 0 590 630" preserveAspectRatio="xMidYMin slice" style="width: 100%; padding-bottom: 100%; height: 1px; overflow: visible">
       <g transform="translate(60,30)">
         <g transform="translate(0, 500)" class="x axis" fill="none" font-size="10" font-family="sans-serif" text-anchor="middle">
@@ -144,7 +168,172 @@ import * as d3 from "d3";
 export default {
   data() {
     return {
-      data: [
+      data: [], // From randomData()
+      chart: {
+        width: 500,
+        height: 500,
+        paddingTop: 30,
+        paddingRight: 30,
+        paddingBottom: 100,
+        paddingLeft: 60
+      },
+      hideTooltip: true
+    };
+  },
+  computed: {
+    // 可視區域
+    viewBox() {
+      let viewW =
+        this.chart.width + this.chart.paddingRight + this.chart.paddingLeft;
+      let viewH =
+        this.chart.height + this.chart.paddingTop + this.chart.paddingBottom;
+
+      return `0 0 ${viewW} ${viewH}`;
+    },
+    // 畫圖起始點
+    startPoint() {
+      return `translate(${this.chart.paddingLeft}, ${this.chart.paddingTop})`;
+    },
+    // 資料轉成陣列給之後畫線用
+    dataArray() {
+      let arrayset = [];
+
+      this.data.forEach(function(e, i) {
+        let array = [];
+
+        e.value.forEach(function(ev) {
+          array.push(ev.number);
+        });
+        
+        arrayset.push(array);
+      });
+
+      return arrayset;
+    },
+    // X軸設定
+    xAxis() {
+      return d3
+        .axisBottom(this.xScale)
+        .ticks(5)
+        .tickFormat((d, i) => {
+          return this.xLabel[i];
+        });
+    },
+    // Y軸設定
+    yAxis() {
+      return d3.axisLeft(this.yScale).tickSizeInner(-this.chart.height);
+    },
+    // X軸線性比例縮放
+    xScale() {
+      return d3
+        .scaleLinear()
+        .domain([0, this.data[0].value.length])
+        .range([0, this.chart.width]);
+    },
+    // Y軸線性比例縮放
+    yScale() {
+      let Ymin = 0;
+      let Ymax;
+      let newArray = [];
+
+      this.data.forEach(function(e, i) {
+        e.value.forEach(function(ev) {
+          newArray.push(ev.number);
+        });
+      });
+      Ymax = d3.max(newArray);
+
+      return d3
+        .scaleLinear()
+        .domain([Ymin, Ymax])
+        .range([this.chart.height, 0]);
+    },
+    // X軸標籤文字
+    xLabel() {
+      let tickLabels = [""];
+      this.data[0].value.forEach(function(e) {
+        tickLabels.push(e.month);
+      });
+      return tickLabels;
+    },
+    // Y軸文字座標
+    axisYText() {
+      let x = 0 - this.chart.height / 2;
+      let y = 0 - this.chart.paddingLeft;
+      return [x, y];
+    },
+    // 顏色函數
+    color() {
+      return d3.scaleOrdinal(d3.schemeCategory10);
+    },
+    // 折線座標、顏色
+    line() {
+      let line = d3
+        .line()
+        .x((d, i) => {
+          //利用尺度運算資料索引，傳回x的位置
+          return this.xScale(i + 1);
+        })
+        .y(d => {
+          //利用尺度運算資料的值，傳回y的位置
+          return this.yScale(d);
+        });
+      let pathArray = [];
+
+      this.dataArray.forEach((e, i) => {
+        pathArray.push({d: line(e), color: this.color(i)});
+      });
+
+      return pathArray;
+    },
+    // 折點座標、顏色
+    dot() {
+      let circleArray = [];
+
+      this.dataArray.forEach((group, i) => {
+        let circleGroup = [];
+
+        group.forEach((number, index) => {
+          circleGroup.push({
+            cx: this.xScale(index + 1),
+            cy: this.yScale(number),
+          });
+        });
+
+        circleArray.push({
+          circle: circleGroup,
+          color: this.color(i)
+        });
+      });
+
+      return circleArray;
+    },
+    label() {
+      let labelArray = [];
+
+      this.data.forEach((e, i) => {
+        labelArray.push({
+          name: e.name,
+          cx: i * 100,
+          cy: this.chart.height + 45,
+          color: this.color(i),
+          x: i * 100 + 10,
+          y: this.chart.height + 50
+        });
+      });
+
+      return labelArray;
+    }
+  },
+  mounted() {
+    // 隨機產生資料
+    this.randomData();
+  },
+  methods: {
+    randomData() {
+      let min = 0;
+      let max = 500;
+      let random = [
         {
           name: "鼓山區",
           value: [
@@ -220,125 +409,46 @@ export default {
             }
           ]
         }
-      ],
-      chart: {
-        width: 500,
-        height: 500,
-        paddingTop: 30,
-        paddingRight: 30,
-        paddingBottom: 100,
-        paddingLeft: 60
+      ];
+
+      // 隨機產生資料
+      for (let i = 0; i < 3; i++) {
+        random[i].value.forEach((e) => {
+          e.number = Math.floor(Math.random() * (max - min + 1)) + min;
+        });
       }
-    };
-  },
-  computed: {
-    viewBox() {
-      let viewW =
-        this.chart.width + this.chart.paddingRight + this.chart.paddingLeft;
-      let viewH =
-        this.chart.height + this.chart.paddingTop + this.chart.paddingBottom;
 
-      return `0 0 ${viewW} ${viewH}`;
-    },
-    startPoint() {
-      return `translate(${this.chart.paddingLeft}, ${this.chart.paddingTop})`;
-    },
-    dataArray() {
-      let arrayset = [];
+      this.data = random;
+      
+      //清除坐標軸
+      document.querySelector('.chart .axisX').innerHTML = '';
+      document.querySelector('.chart .axisY').innerHTML = '';
 
-      this.data.forEach(function(e, i) {
-        let array = []; // 資料轉成陣列給之後畫線用
+      // 插入X軸座標
+      d3
+        .select(".chart .axisX")
+        .call(this.xAxis);
+      // 插入Y軸座標
+      d3
+        .select(".chart .axisY")
+        .call(this.yAxis);
+    },
+    showTooltip(index1, index2, event) {
+      let mouseX = event.clientX + 20;
+      let mouseY = event.clientY;
 
-        e.value.forEach(function(ev) {
-          array.push(ev.number);
-        });
-        
-        arrayset.push(array);
-      });
+      // 設置位置
+      document.querySelector('.tooltip').setAttribute('style', `left: ${mouseX}px; top: ${mouseY}px;`);
+      // 插入名稱
+      document.querySelector('.tooltip .name').innerHTML = `${this.data[index1].name} / ${this.data[index1].value[index2].month}`;
+      document.querySelector('.tooltip .value').innerHTML = `${this.data[index1].value[index2].number} 件`;
 
-      return arrayset;
+      // 顯示 tooltip
+      this.hideTooltip = false;
     },
-    xAxis() {
-      return d3
-        .axisBottom(this.xScale)
-        .ticks(5)
-        .tickFormat((d, i) => {
-          return this.xLabel[i];
-        });
-    },
-    yAxis() {
-      return d3.axisLeft(this.yScale).tickSizeInner(-this.chart.height);
-    },
-    xScale() {
-      return d3
-        .scaleLinear()
-        .domain([0, this.data[0].value.length])
-        .range([0, this.chart.width]);
-    },
-    yScale() {
-      let Ymin = 0;
-      let Ymax;
-      let newArray = [];
-
-      this.data.forEach(function(e, i) {
-        e.value.forEach(function(ev) {
-          newArray.push(ev.number);
-        });
-      });
-      Ymax = d3.max(newArray);
-
-      return d3
-        .scaleLinear()
-        .domain([Ymin, Ymax])
-        .range([this.chart.height, 0]);
-    },
-    xLabel() {
-      let tickLabels = [""];
-      this.data[0].value.forEach(function(e) {
-        tickLabels.push(e.month);
-      });
-      return tickLabels;
-    },
-    axisYText() {
-      let x = 0 - this.chart.height / 2;
-      let y = 0 - this.chart.paddingLeft;
-      return [x, y];
-    },
-    line() {
-      let color = d3.scaleOrdinal(d3.schemeCategory10);
-      let line = d3
-        .line()
-        .x((d, i) => {
-          //利用尺度運算資料索引，傳回x的位置
-          return this.xScale(i + 1);
-        })
-        .y(d => {
-          //利用尺度運算資料的值，傳回y的位置
-          return this.yScale(d);
-        });
-      let pathArray = [];
-
-      this.dataArray.forEach(function(e, i) {
-        pathArray.push({d: line(e), color: color(i)});
-      });
-
-      return pathArray;
+    hiddenTooltip() {
+      this.hideTooltip = true;
     }
-  },
-  mounted() {
-    // 插入X軸座標
-    d3
-      .select(".chart .chartWrap")
-      .insert("g")
-      .attr("transform", `translate(0, ${this.chart.height})`)
-      .attr("class", "axis axisX")
-      .call(this.xAxis);
-    // 插入Y軸座標
-    d3
-      .select(".chart .chartWrap")
-      .insert("g")
-      .attr("class", "axis axisY")
-      .call(this.yAxis);
   }
 };
 </script>
@@ -346,7 +456,7 @@ export default {
 <style lang="postcss">
 .lineChart {
   .detail {
-    color: red;
+    color: gray;
   }
   .chartContain {
     max-width: 600px;
@@ -370,9 +480,23 @@ export default {
             }
           }
         }
-        .axisYText {
-          text-anchor: middle;
+        .line path, .dot circle {
+          transition: 1s;
         }
+      }
+    }
+    .tooltip {
+      min-width: 100px;
+      background-color: rgba(0, 0, 0, 0.9);
+      color: white;
+      padding: 10px;
+      border-radius: 6px;
+      position: absolute;
+      text-align: left;
+      line-height: 1.5em;
+      z-index: 1;
+      &.hidden {
+        visibility: hidden;
       }
     }
   }
