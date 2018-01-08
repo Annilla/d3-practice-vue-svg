@@ -1,14 +1,26 @@
 <template>
   <div class="hello">
-    <router-link :to="{ name: 'LineChart' }">折線圖</router-link>
+    <ul>
+      <li><router-link :to="{ name: 'LineChart' }">折線圖</router-link></li>
+      <li><router-link :to="{ name: 'BarPChart' }">橫條圖</router-link></li>
+    </ul>
   </div>
 </template>
 
 <script>
-export default {
-}
+export default {};
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
-<style>
+<style lang="postcss">
+.hello {
+  ul {
+    padding: 0;
+    li {
+      list-style: none;
+      line-height: 1.5em;
+      font-size: 30px;
+    }
+  }
+}
 </style>

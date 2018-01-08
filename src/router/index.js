@@ -3,6 +3,7 @@ import Vue from 'vue'
 import Router from 'vue-router'
 import HelloWorld from '@/components/HelloWorld'
 import LineChart from '@/components/LineChart'
+import BarPChart from '@/components/BarPChart'
 
 Vue.use(Router)
 
@@ -18,6 +19,11 @@ export default new Router({
       path: '/LineChart',
       name: 'LineChart',
       component: LineChart
+    },
+    {
+      path: '/BarPChart',
+      name: 'BarPChart',
+      component: BarPChart
     }
   ]
 })
