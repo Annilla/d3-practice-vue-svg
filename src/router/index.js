@@ -11,17 +11,17 @@ export default new Router({
   mode: 'history',
   routes: [
     {
-      path: '/',
+      path: `${ROOT_FOLDER}/`,
       name: 'HelloWorld',
       component: HelloWorld
     },
     {
-      path: '/LineChart',
+      path: `${ROOT_FOLDER}/LineChart`,
       name: 'LineChart',
       component: LineChart
     },
     {
-      path: '/BarPChart',
+      path: `${ROOT_FOLDER}/BarPChart`,
       name: 'BarPChart',
       component: BarPChart
     }
