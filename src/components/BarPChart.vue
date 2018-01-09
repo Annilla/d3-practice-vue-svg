@@ -15,9 +15,7 @@
           <text class="axisYText" :x="axisYText[0]" :y="axisYText[1]" dy="1em" text-anchor="middle">件數</text>
           <!-- 橫條 -->
           <transition-group tag="g" name="growBarp">
-            <g class="bar" v-for="(rect, key) in bar" :key="`${key}${rect.width}${rect.y}`">
-              <rect :fill="rect.color" :x="rect.x" :y="rect.y" :width="rect.width" :height="rect.height" v-on:mouseover="showTooltip(key, $event)" v-on:mouseout="hiddenTooltip"></rect>
-            </g>
+            <rect class="bar" v-for="(rect, key) in bar" :key="`${key}${rect.width}${rect.y}`" :fill="rect.color" :x="rect.x" :y="rect.y" :width="rect.width" :height="rect.height" v-on:mouseover="showTooltip(key, $event)" v-on:mouseout="hiddenTooltip"></rect>
           </transition-group>
           <!-- 橫條文字 -->
           <g class="barText" v-for="(text, key) in barText" :key="key">

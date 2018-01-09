@@ -16,14 +16,14 @@
           <!-- Y軸標籤 -->
           <text class="axisYText" :x="axisYText[0]" :y="axisYText[1]" dy="1em" transform="rotate(-90)" text-anchor="middle">件數</text>
           <!-- 折線 -->
-          <g class="line" v-for="(path, key) in line" :key="key">
-            <path fill="none" :stroke="path.color" :d="path.d"></path>
-          </g>
+          <transition-group tag="g" name="growLine">
+            <path class="line" v-for="(path, key) in line" :key="`${key}${path.d}`" fill="none" :stroke="path.color" :d="path.d"></path>
+          </transition-group>
           <!-- 點 -->
           <g class="dot" v-for="(group, key) in dot" :key="key">
-            <template v-for="(c, k) in group.circle">
-              <circle :key="k" :cx="c.cx" :cy="c.cy" r="5" :fill="group.color" stroke="white" v-on:mouseover="showTooltip(key, k, $event)" v-on:mouseout="hiddenTooltip"></circle>
-            </template>
+            <transition-group tag="g" name="growDot">
+              <circle v-for="(c, k) in group.circle" :key="`${k}${c.cx}${c.cy}`" :cx="c.cx" :cy="c.cy" r="5" :fill="group.color" stroke="white" v-on:mouseover="showTooltip(key, k, $event)" v-on:mouseout="hiddenTooltip"></circle>
+            </transition-group>
           </g>
           <!-- 標籤 -->
           <g class="label" v-for="(la, key) in label" :key="key">
@@ -334,9 +334,27 @@ export default {
 
 <style lang="postcss">
 .lineChart {
+  /* 動畫 */
+  .growLine-enter-active {
+    transition: all 2s;
+    stroke-dashoffset: 0;
+  }
+  .growLine-enter {
+    stroke-dashoffset: 3000;
+  }
+  .growDot-enter-active {
+    transition: all 1s;
+  }
+  .growDot-enter {
+    opacity: 0;
+    transform: scale(0);
+    transform-origin: 50%;
+  }
+  /* 說明 */
   .detail {
     color: gray;
   }
+  /* 統計圖 */
   .chartContain {
     max-width: 600px;
     margin: 0 auto;
@@ -359,8 +377,8 @@ export default {
             }
           }
         }
-        .line path, .dot circle {
-          transition: 1s;
+        .line {
+          stroke-dasharray: 3000;
         }
       }
     }
