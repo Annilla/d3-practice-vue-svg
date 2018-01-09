@@ -14,9 +14,11 @@
           <!-- Y軸標籤 -->
           <text class="axisYText" :x="axisYText[0]" :y="axisYText[1]" dy="1em" text-anchor="middle">件數</text>
           <!-- 橫條 -->
-          <g class="bar" v-for="(rect, key) in bar" :key="key">
-            <rect :fill="rect.color" :x="rect.x" :y="rect.y" :width="animateRec(rect.width, key, $event)" :height="rect.height" v-on:mouseover="showTooltip(key, $event)" v-on:mouseout="hiddenTooltip"></rect>
-          </g>
+          <transition-group tag="g" name="growBarp">
+            <g class="bar" v-for="(rect, key) in bar" :key="`${key}${rect.width}${rect.y}`">
+              <rect :fill="rect.color" :x="rect.x" :y="rect.y" :width="rect.width" :height="rect.height" v-on:mouseover="showTooltip(key, $event)" v-on:mouseout="hiddenTooltip"></rect>
+            </g>
+          </transition-group>
           <!-- 橫條文字 -->
           <g class="barText" v-for="(text, key) in barText" :key="key">
             <text fill="white" text-anchor="middle" :x="text.x" :y="text.y">{{ text.number }}</text>
@@ -218,9 +220,6 @@ export default {
     },
     hiddenTooltip() {
       this.hideTooltip = true;
-    },
-    animateRec(width, index, event) {
-      return width;
     }
   }
 };
@@ -228,9 +227,19 @@ export default {
 
 <style lang="postcss">
 .barpChart {
+  /* 動畫 */
+  .growBarp-enter-active {
+    transition: all 1s;
+  }
+  .growBarp-enter {
+    transform: scaleX(0);
+    opacity: 0;
+  }
+  /* 說明 */
   .detail {
     color: gray;
   }
+  /* 統計圖 */
   .chartContain {
     max-width: 600px;
     margin: 0 auto;
