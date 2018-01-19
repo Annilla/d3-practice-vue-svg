@@ -1,24 +1,39 @@
 <template>
-  <div class="barpChart">
+  <div class="donutChart">
     <h1>甜甜圈圖</h1>
     <div class="detail">高雄市不動產買賣統計(104年6月)</div>
     <!-- 圖表 -->
     <div class="chartContain">
       <div class="chartWrap">
         <svg class="chart" :viewBox="`0 0 ${chart.outerRadius*2} ${chart.outerRadius*2}`" preserveAspectRatio="xMidYMin slice">
-          <transition-group tag="g" name="growCircle">
-            <circle class="circle"
-              v-for="(c, key) in donut"
-              :key="`${key}${c.percentage}${c.offset}`"
-              :r="radius"
-              :cx="chart.outerRadius"
-              :cy="chart.outerRadius"
-              :stroke-width="chart.outerRadius - chart.innerRadius"
-              :stroke-dasharray="dasharray(c.percentage)"
-              :stroke-dashoffset="c.offset"
-              :stroke="c.color"
-              fill= "transparent"/>
-          </transition-group>
+          <!-- 執行動畫的圓圈 -->
+          <circle class="circle"
+            v-for="(c, key) in donut"
+            ref="circles"
+            :key="`${key}${c.percentage}${c.offset}`"
+            :r="radius"
+            :cx="chart.outerRadius"
+            :cy="chart.outerRadius"
+            :stroke-width="chart.outerRadius - chart.innerRadius"
+            :stroke-dashoffset="c.offset"
+            :stroke="c.color"
+            fill= "transparent"/>
+          <!-- 滑鼠滑過的區塊 -->
+          <g
+            class="arc"
+            v-for="(p, key) in pie"
+            :key="`${key}${p.d}`"
+            :transform="`translate(${chart.outerRadius},${chart.outerRadius}) rotate(90)`">
+            <path
+              fill="#000"
+              :d="p.d">
+            </path>
+            <!-- <text
+              transform="translate(42.86159811620382,-143.74589874819048)"
+              text-anchor="middle"
+              fill="white">9%
+            </text> -->
+          </g>
         </svg>
       </div>
       <div :class="{ tooltip: true, hidden: hideTooltip}">
@@ -48,8 +63,11 @@ export default {
   },
   computed: {
     // Circle 半徑
-    radius () {
-      return this.chart.outerRadius - (this.chart.outerRadius - this.chart.innerRadius)/2;
+    radius() {
+      return (
+        this.chart.outerRadius -
+        (this.chart.outerRadius - this.chart.innerRadius) / 2
+      );
     },
     circum() {
       // circumference = 2 * pi * radius
@@ -85,6 +103,28 @@ export default {
 
           // 把前面的 percentage 累加 (0.xxx)
           afterPer = afterPer + e.value / this.totalSum;
+        });
+      }
+
+      return newArray;
+    },
+    pie() {
+      let newArray = [];
+      let angles = d3
+        .pie()
+        .sort(null)
+        .value(function(d) {
+          return d.value;
+        })(this.data); // 準備好 arc 角度
+      
+      let dd = d3.arc().innerRadius(this.chart.innerRadius).outerRadius(this.chart.outerRadius);// 這邊要怎麼變成數字??
+
+      if (this.data.length) {
+        this.data.forEach((e, i) => {
+          // 新增陣列
+          newArray.push({
+            d: dd
+          });
         });
       }
 
@@ -147,24 +187,46 @@ export default {
       ];
 
       // 隨機砍掉區域
-      // let newRandom = [];
-      // random.forEach((el, index)=>{
-      //   if(Math.random() >= 0.5) {
-      //     newRandom.push(el);
-      //   }
-      // });
+      let newRandom = [];
+      random.forEach((el, index) => {
+        if (Math.random() >= 0.5) {
+          newRandom.push(el);
+        }
+      });
+
       // 隨機產生資料
-      random.forEach((el)=>{
+      newRandom.forEach(el => {
         el.value = Math.floor(Math.random() * (max - min + 1)) + min;
       });
 
-      this.data = random;
+      this.data = newRandom;
+
+      // 用 js 跑展開動畫
+      this.$nextTick().then(() => {
+        // DOM updated
+        this.donut.forEach((el, index) => {
+          let totalTime = 500; // 設定時間跑 css
+          let stroke = this.dasharray(el.percentage);
+
+          // 起始位置
+          this.$refs.circles[index].style.cssText = `stroke-dasharray: 0 ${
+            this.circum
+          }; opacity: 0`;
+
+          // 設定 Interval
+          setTimeout(() => {
+            this.$refs.circles[index].style.cssText = `stroke-dasharray: ${
+              stroke.dash
+            } ${stroke.gap}; opacity: 1`;
+          }, totalTime);
+        });
+      });
     },
     dasharray(percentage) {
       let dash = this.circum / 100 * percentage; // percentage%
       let gap = this.circum / 100 * (100 - percentage);
 
-      return `${dash} ${gap}`;
+      return { dash: dash, gap: gap };
     },
     showTooltip(index, event) {
       let mouseX = event.clientX + 20;
@@ -193,15 +255,7 @@ export default {
 </script>
 
 <style lang="postcss">
-.barpChart {
-  /* 動畫
-  .growCircle-enter-active {
-    transition: all 2s;
-    stroke-dashoffset: 0;
-  }
-  .growCircle-enter {
-    stroke-dashoffset: 3000;
-  } */
+.donutChart {
   /* 說明 */
   .detail {
     color: gray;
@@ -218,6 +272,9 @@ export default {
         height: 1px;
         overflow: visible;
         transform: rotate(-90deg);
+        .circle {
+          transition: 1s;
+        }
       }
     }
     .tooltip {
