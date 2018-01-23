@@ -23,21 +23,31 @@
             class="arc"
             v-for="(p, key) in pie"
             :key="`${key}${p.d}`"
-            :transform="`translate(${chart.outerRadius},${chart.outerRadius}) rotate(90)`">
+            :transform="`translate(${chart.outerRadius},${chart.outerRadius}) rotate(90)`"
+            v-on:mouseover="showTooltip(key, $event)" v-on:mouseout="hiddenTooltip">
             <path
-              fill="#000"
+              fill="transparent"
               :d="p.d">
             </path>
-            <!-- <text
-              transform="translate(42.86159811620382,-143.74589874819048)"
+            <text
+              :transform="`translate(${p.centroid})`"
               text-anchor="middle"
-              fill="white">9%
-            </text> -->
+              fill="white">{{ p.percentage }}
+            </text>
           </g>
         </svg>
       </div>
+      <ul class="labelWrap">
+        <li
+          v-for="(p, key) in pie"
+          :key="`${key}${p.d}`">
+          <span class="color" :style="`background-color: ${donut[key].color};`"></span>
+          <span class="region">{{ data[key].name }}</span>
+          <span class="percentage">{{ p.percentage }}</span>
+        </li>
+      </ul>
       <div :class="{ tooltip: true, hidden: hideTooltip}">
-        <div class="name">左營區 / 10月</div>
+        <div class="name">左營區 / 10%</div>
         <div class="value">214 件</div>
       </div>
     </div>
@@ -110,20 +120,30 @@ export default {
     },
     pie() {
       let newArray = [];
-      let angles = d3
+      let format = d3.format(".0p"); // 百分比單位
+      let pie = d3
         .pie()
         .sort(null)
         .value(function(d) {
           return d.value;
         })(this.data); // 準備好 arc 角度
-      
-      let dd = d3.arc().innerRadius(this.chart.innerRadius).outerRadius(this.chart.outerRadius);// 這邊要怎麼變成數字??
 
       if (this.data.length) {
         this.data.forEach((e, i) => {
+          // 準備好 arc 路徑
+          let arc = d3
+            .arc()
+            .innerRadius(this.chart.innerRadius)
+            .outerRadius(this.chart.outerRadius);
+
           // 新增陣列
           newArray.push({
-            d: dd
+            d: arc({
+              startAngle: pie[i].startAngle,
+              endAngle: pie[i].endAngle
+            }),
+            centroid: arc.centroid(pie[i]),
+            percentage: format(e.value / this.totalSum)
           });
         });
       }
@@ -238,10 +258,10 @@ export default {
         .setAttribute("style", `left: ${mouseX}px; top: ${mouseY}px;`);
       // 插入名稱
       document.querySelector(".tooltip .name").innerHTML = `${
-        this.data.name
-      } / ${this.data.value[index].month}`;
+        this.data[index].name
+      } / ${this.pie[index].percentage}`;
       document.querySelector(".tooltip .value").innerHTML = `${
-        this.data.value[index].number
+        this.data[index].value
       } 件`;
 
       // 顯示 tooltip
@@ -263,9 +283,14 @@ export default {
   /* 統計圖 */
   .chartContain {
     max-width: 600px;
-    margin: 0 auto;
+    margin: 15px auto;
+    overflow: hidden;
     .chartWrap {
-      width: 400px;
+      width: 100%;
+      @media screen and (min-width: 600px) {
+        width: calc(100% - 200px);
+        float: left;
+      }
       .chart {
         width: 100%;
         padding-bottom: 100%;
@@ -274,6 +299,38 @@ export default {
         transform: rotate(-90deg);
         .circle {
           transition: 1s;
+        }
+      }
+    }
+    ul.labelWrap {
+      width: 100%;
+      padding: 0;
+      overflow: hidden;
+      @media screen and (min-width: 600px) {
+        width: 150px;
+        padding-left: 50px;
+        float: right;
+      }
+      li {
+        list-style: none;
+        display: block;
+        overflow: hidden;
+        margin: 15px 10px 0 0;
+        float: left;
+        .color {
+          display: inline-block;
+          width: 10px;
+          height: 10px;
+          margin: 5px 5px 0 0;
+          float: left;
+        }
+        .region {
+          float: left;
+          margin-right: 10px;
+        }
+        .percentage {
+          float: left;
+          color: rgba(0, 0, 0, 0.4);
         }
       }
     }
