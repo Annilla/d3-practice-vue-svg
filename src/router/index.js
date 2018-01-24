@@ -10,6 +10,7 @@ Vue.use(Router)
 
 export default new Router({
   mode: 'history',
+  fallback: false, // Setting this to false essentially makes every router-link navigation a full page refresh in IE9.
   routes: [
     {
       path: `${ROOT_FOLDER}/`,
@@ -30,6 +31,7 @@ export default new Router({
       path: `${ROOT_FOLDER}/DonutChart`,
       name: 'DonutChart',
       component: DonutChart
-    }
+    },
+    { path: '*', redirect: `${ROOT_FOLDER}/` }
   ]
 })
