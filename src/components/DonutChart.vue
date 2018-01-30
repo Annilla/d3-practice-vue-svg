@@ -65,7 +65,7 @@ export default {
     return {
       data: [], // From randomData()
       chart: {
-        innerRadius: 100,
+        innerRadius: 100, // 0 for PieChart
         outerRadius: 200
       },
       hideTooltip: true
@@ -120,7 +120,7 @@ export default {
     },
     pie() {
       let newArray = [];
-      let format = d3.format(".0p"); // 百分比單位
+      let format = d3.format(".0%"); // 百分比單位
       let pie = d3
         .pie()
         .sort(null)
