@@ -1,7 +1,7 @@
 <template>
   <div class="barpChart">
     <h1>橫條圖</h1>
-    <div class="detail">高雄市鼓山區不動產買賣統計(104年6-10月)</div>
+    <div class="detail">高雄市鼓山區不動產買賣統計(104年)</div>
     <!-- 圖表 -->
     <div class="chartContain">
       <svg class="chart" :viewBox="viewBox" preserveAspectRatio="xMidYMin slice">
