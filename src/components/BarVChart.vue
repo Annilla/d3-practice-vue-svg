@@ -88,7 +88,8 @@ export default {
     },
     // X軸設定
     xAxis() {
-      let tickNum = this.valueLength < 3 ? this.valueLength + 1 : this.valueLength;
+      let tickNum =
+        this.valueLength < 3 ? this.valueLength + 1 : this.valueLength;
 
       return d3
         .axisBottom(this.xScale)
@@ -310,10 +311,10 @@ export default {
 .barVChart {
   /* 動畫 */
   .growBar-enter-active {
-    transition: all 1s;
+    transition: transform 0.7s, opacity 1s;
   }
   .growBar-enter {
-    transform: scaleY(0);
+    transform: scaleY(0.55) translateY(-12%);
     opacity: 0;
   }
   .growText-enter-active {
