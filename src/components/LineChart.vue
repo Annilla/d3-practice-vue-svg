@@ -347,8 +347,6 @@ export default {
   }
   .growDot-enter {
     opacity: 0;
-    transform: scale(0);
-    transform-origin: 50%;
   }
   /* 說明 */
   .detail {
