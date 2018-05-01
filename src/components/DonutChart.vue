@@ -225,7 +225,7 @@ export default {
       this.$nextTick().then(() => {
         // DOM updated
         this.donut.forEach((el, index) => {
-          let totalTime = 500; // 設定時間跑 css
+          let totalTime = 100; // 設定時間跑 css
           let stroke = this.dasharray(el.percentage);
 
           // 起始位置
